@@ -1,0 +1,943 @@
+import React, { useState, useEffect, useRef } from 'react';
+
+const App = () => {
+  const [currentPage, setCurrentPage] = useState(0);
+  const flowerContainerRef = useRef(null);
+  const [animeLoaded, setAnimeLoaded] = useState(false);
+
+  // Load anime.js and animate.css
+  useEffect(() => {
+    // Load animate.css
+    const animateCssLink = document.createElement('link');
+    animateCssLink.rel = 'stylesheet';
+    animateCssLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css';
+    document.head.appendChild(animateCssLink);
+
+    // Load anime.js
+    const animeScript = document.createElement('script');
+    animeScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js';
+    animeScript.onload = () => setAnimeLoaded(true);
+    document.head.appendChild(animeScript);
+
+    return () => {
+      if (document.head.contains(animateCssLink)) {
+        document.head.removeChild(animateCssLink);
+      }
+      if (document.head.contains(animeScript)) {
+        document.head.removeChild(animeScript);
+      }
+    };
+  }, []);
+
+  // Inject styles on mount
+  useEffect(() => {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Great+Vibes:wght@400&family=Dancing+Script:wght@400;600&family=Poppins:wght@300;400;500;600&display=swap');
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Poppins', sans-serif;
+        background: linear-gradient(135deg, #FF9933 0%, #FFD700 25%, #FFC0CB 75%, #800000 100%);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      .app-container {
+        position: relative;
+        min-height: 100vh;
+      }
+
+      .flower-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      .falling-flower {
+        position: absolute;
+        top: -20px;
+        animation: fall linear infinite;
+        opacity: 0.8;
+        filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+      }
+
+      @keyframes fall {
+        0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+      }
+
+      .page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        position: relative;
+        z-index: 2;
+      }
+
+      .page-indicator {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+        z-index: 100;
+      }
+
+      .indicator-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+
+      .indicator-dot.active {
+        background: #FFD700;
+        transform: scale(1.2);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+      }
+
+      .indicator-dot:hover {
+        background: rgba(255, 215, 0, 0.7);
+        transform: scale(1.1);
+      }
+
+      .floating-elements {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+      }
+
+      .floating-item {
+        position: absolute;
+        font-size: 2rem;
+        animation: float 3s ease-in-out infinite;
+        filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+      }
+
+      .floating-item:nth-child(1) { top: 20%; left: 10%; animation-delay: 0s; }
+      .floating-item:nth-child(2) { top: 30%; right: 15%; animation-delay: 1s; }
+      .floating-item:nth-child(3) { bottom: 25%; left: 15%; animation-delay: 2s; }
+      .floating-item:nth-child(4) { bottom: 20%; right: 10%; animation-delay: 1.5s; }
+
+      @keyframes float {
+        0%, 100% { transform: translateY(0px) scale(1); }
+        50% { transform: translateY(-20px) scale(1.1); }
+      }
+
+      .main-content {
+        max-width: 900px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(15px);
+        border-radius: 30px;
+        padding: 3rem;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        border: 3px solid rgba(255, 215, 0, 0.4);
+        text-align: center;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .main-content::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+        animation: rotate 20s linear infinite;
+        pointer-events: none;
+      }
+
+      @keyframes rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .main-title {
+        font-family: 'Great Vibes', cursive;
+        font-size: 3.5rem;
+        color: #800000;
+        margin-bottom: 2rem;
+        text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2);
+        position: relative;
+        z-index: 2;
+      }
+
+      .rakhi-container {
+        margin: 3rem 0;
+        display: flex;
+        justify-content: center;
+        position: relative;
+        z-index: 2;
+      }
+
+      .rakhi-graphic {
+        position: relative;
+        width: 150px;
+        height: 150px;
+      }
+
+      .rakhi-thread {
+        position: absolute;
+        top: 50%;
+        left: -50px;
+        right: -50px;
+        height: 6px;
+        background: linear-gradient(90deg, #FF9933, #FFD700, #800000, #FFD700, #FF9933);
+        transform: translateY(-50%);
+        border-radius: 3px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .rakhi-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100px;
+        height: 100px;
+        background: radial-gradient(circle, #FFD700, #FF9933, #800000);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.7);
+        border: 3px solid white;
+      }
+
+      .rakhi-pattern {
+        width: 60px;
+        height: 60px;
+        border: 3px solid #800000;
+        border-radius: 50%;
+        position: relative;
+        background: white;
+      }
+
+      .rakhi-gem {
+        position: absolute;
+        width: 15px;
+        height: 15px;
+        background: linear-gradient(45deg, #FF69B4, #FFB6C1);
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 15px rgba(255, 105, 180, 0.8);
+        animation: gem-sparkle 2s infinite;
+      }
+
+      @keyframes gem-sparkle {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); }
+        50% { transform: translate(-50%, -50%) scale(1.2); box-shadow: 0 0 20px rgba(255, 105, 180, 1); }
+      }
+
+      .content-text {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: #444;
+        margin-bottom: 1rem;
+        font-style: italic;
+        position: relative;
+        z-index: 2;
+      }
+
+      .signature {
+        font-family: 'Dancing Script', cursive;
+        font-size: 1.5rem;
+        color: #800000;
+        margin-top: 1rem;
+        font-weight: 600;
+      }
+
+      .grid-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+        position: relative;
+        z-index: 2;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 1.5rem;
+        border-radius: 20px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.3), transparent);
+        transition: left 0.5s ease;
+      }
+
+      .card:hover::before {
+        left: 100%;
+      }
+
+      .card:hover {
+        transform: translateY(-8px) scale(1.02);
+        border-color: rgba(255, 215, 0, 0.5);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+      }
+
+      .card-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        animation: bounce 2s infinite;
+      }
+
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-10px); }
+        60% { transform: translateY(-5px); }
+      }
+
+      .card h3 {
+        font-size: 1.2rem;
+        color: #800000;
+        margin-bottom: 0.5rem;
+      }
+
+      .card p {
+        color: #555;
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+
+      .wish-scroll {
+        background: linear-gradient(145deg, #fff8dc, #fff, #fffacd);
+        padding: 2rem;
+        border-radius: 25px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        border-left: 6px solid #FFD700;
+        position: relative;
+        transition: all 0.3s ease;
+      }
+
+      .wish-scroll:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      .scroll-decorative {
+        font-size: 2rem;
+        position: absolute;
+        top: -15px;
+        right: -15px;
+        background: linear-gradient(45deg, #FFD700, #FFA500);
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        animation: rotate-slow 10s linear infinite;
+      }
+
+      @keyframes rotate-slow {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .celebration-finale {
+        margin-top: 2rem;
+        padding: 2.5rem;
+        background: linear-gradient(145deg, rgba(255, 215, 0, 0.2), rgba(255, 153, 51, 0.1));
+        border-radius: 25px;
+        border: 2px solid rgba(255, 215, 0, 0.3);
+        position: relative;
+        z-index: 2;
+      }
+
+      .fireworks {
+        font-size: 3.5rem;
+        margin: 0 1rem;
+        animation: sparkle-big 1.5s infinite;
+        display: inline-block;
+      }
+
+      @keyframes sparkle-big {
+        0%, 100% { transform: scale(1) rotate(0deg); }
+        25% { transform: scale(1.2) rotate(90deg); }
+        50% { transform: scale(1.3) rotate(180deg); }
+        75% { transform: scale(1.1) rotate(270deg); }
+      }
+
+      .big-rakhi-graphic {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        margin: 0 auto;
+      }
+
+      .big-rakhi-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 150px;
+        height: 150px;
+        background: radial-gradient(circle, #FFD700, #FF9933, #800000);
+        border-radius: 50%;
+        box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
+        border: 4px solid white;
+        animation: pulse-glow 2s infinite;
+      }
+
+      @keyframes pulse-glow {
+        0%, 100% { 
+          transform: translate(-50%, -50%) scale(1); 
+          box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
+        }
+        50% { 
+          transform: translate(-50%, -50%) scale(1.05); 
+          box-shadow: 0 0 60px rgba(255, 215, 0, 1);
+        }
+      }
+
+      .page-nav {
+        margin-top: 3rem;
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 2;
+      }
+
+      .nav-btn {
+        background: linear-gradient(45deg, #FF9933, #FFD700);
+        color: white;
+        border: none;
+        padding: 1.2rem 2.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 20px rgba(255, 153, 51, 0.4);
+        font-family: 'Poppins', sans-serif;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .nav-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s ease;
+      }
+
+      .nav-btn:hover::before {
+        left: 100%;
+      }
+
+      .nav-btn:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 12px 30px rgba(255, 153, 51, 0.6);
+      }
+
+      .nav-btn.secondary {
+        background: linear-gradient(45deg, #800000, #B22222);
+        box-shadow: 0 8px 20px rgba(128, 0, 0, 0.4);
+      }
+
+      .nav-btn.special {
+        background: linear-gradient(45deg, #FFD700, #FFA500);
+        animation: rainbow-glow 2s infinite;
+      }
+
+      @keyframes rainbow-glow {
+        0%, 100% { box-shadow: 0 8px 20px rgba(255, 215, 0, 0.4); }
+        50% { box-shadow: 0 8px 25px rgba(255, 165, 0, 0.6); }
+      }
+
+      .audio-control {
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        z-index: 100;
+      }
+
+      .audio-btn {
+        background: rgba(255, 255, 255, 0.95);
+        border: 2px solid rgba(255, 215, 0, 0.5);
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 1.8rem;
+        cursor: pointer;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        transition: all 0.3s ease;
+      }
+
+      .audio-btn:hover {
+        transform: scale(1.15) rotate(10deg);
+        background: rgba(255, 215, 0, 0.2);
+      }
+
+      .footer {
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        text-align: center;
+        padding: 1.5rem;
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        z-index: 2;
+        backdrop-filter: blur(10px);
+      }
+
+      .heartbeat {
+        animation: heartbeat 1.5s infinite;
+      }
+
+      @keyframes heartbeat {
+        0%, 100% { transform: scale(1); }
+        25% { transform: scale(1.1); }
+        50% { transform: scale(1.05); }
+        75% { transform: scale(1.15); }
+      }
+
+      @media (max-width: 768px) {
+        .main-title { font-size: 2.5rem; }
+        .main-content { padding: 2rem; margin: 1rem; }
+        .grid-container { grid-template-columns: 1fr; }
+        .page-nav { flex-direction: column; align-items: center; }
+        .nav-btn { width: 200px; }
+      }
+    `;
+
+    document.head.appendChild(styleElement);
+
+    return () => {
+      if (document.head.contains(styleElement)) {
+        document.head.removeChild(styleElement);
+      }
+    };
+  }, []);
+
+  // Flower animation effect
+  useEffect(() => {
+    const container = flowerContainerRef.current;
+    if (!container) return;
+
+    const flowers = ['🌸', '🌺', '🌷', '🌹', '💐'];
+    
+    const createFlower = () => {
+      const flower = document.createElement('div');
+      flower.className = 'falling-flower';
+      flower.innerHTML = flowers[Math.floor(Math.random() * flowers.length)];
+      flower.style.left = Math.random() * 100 + '%';
+      flower.style.animationDuration = (Math.random() * 3 + 2) + 's';
+      flower.style.fontSize = (Math.random() * 15 + 15) + 'px';
+      container.appendChild(flower);
+
+      setTimeout(() => {
+        if (container.contains(flower)) {
+          container.removeChild(flower);
+        }
+      }, 6000);
+    };
+
+    const interval = setInterval(createFlower, 400);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Anime.js animations
+  useEffect(() => {
+    if (!animeLoaded || !window.anime) return;
+
+    const timeline = window.anime.timeline({
+      easing: 'easeOutExpo',
+      duration: 1000
+    });
+
+    timeline
+      .add({
+        targets: '.main-content',
+        translateY: [50, 0],
+        opacity: [0, 1],
+        scale: [0.8, 1],
+        duration: 1200
+      })
+      .add({
+        targets: '.main-title',
+        translateY: [-30, 0],
+        opacity: [0, 1],
+        duration: 800,
+        offset: '-=600'
+      })
+      .add({
+        targets: '.rakhi-center',
+        rotate: '1turn',
+        scale: [0, 1],
+        duration: 1500,
+        offset: '-=400'
+      })
+      .add({
+        targets: '.content-text',
+        translateX: [-20, 0],
+        opacity: [0, 1],
+        duration: 600,
+        offset: '-=800'
+      });
+
+  }, [animeLoaded, currentPage]);
+
+  const pages = ['welcome', 'greeting', 'memory', 'wishes', 'celebration', 'final'];
+
+  const nextPage = () => {
+    if (currentPage < pages.length - 1) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const restartJourney = () => {
+    setCurrentPage(0);
+  };
+
+  const goToPage = (pageIndex) => {
+    setCurrentPage(pageIndex);
+  };
+
+  // Welcome Page Component
+  const WelcomePage = () => (
+    <section className="page">
+      <div className="floating-elements">
+        <div className="floating-item">💖</div>
+        <div className="floating-item">🪔</div>
+        <div className="floating-item">❤️</div>
+        <div className="floating-item">🪔</div>
+      </div>
+      
+      <div className="main-content animate__animated animate__fadeInUp">
+        <h1 className="main-title animate__animated animate__bounceInDown">Happy Raksha Bandhan! 🌟</h1>
+        <div className="content-text animate__animated animate__fadeInLeft animate__delay-1s">
+          <p>Hey there! Ready for something special? Today isn't just any ordinary day...</p>
+          <p>It's about celebrating that incredible bond we share - the kind that makes life so much brighter! ✨</p>
+          <p>Come on, let's dive into this beautiful journey together!</p>
+        </div>
+        <div className="page-nav">
+          <button onClick={nextPage} className="nav-btn animate__animated animate__pulse animate__infinite">
+            Let's Get Started! ✨
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+
+  // Greeting Page Component  
+  const GreetingPage = () => (
+    <section className="page">
+      <div className="floating-elements">
+        <div className="floating-item heartbeat">💖</div>
+        <div className="floating-item">🪔</div>
+        <div className="floating-item heartbeat">❤️</div>
+        <div className="floating-item">🪔</div>
+      </div>
+      
+      <div className="main-content animate__animated animate__zoomIn">
+        <h1 className="main-title animate__animated animate__rubberBand">Hey Beautiful Soul! 💖</h1>
+        
+        <div className="rakhi-container animate__animated animate__rotateIn animate__delay-1s">
+          <div className="rakhi-graphic">
+            <div className="rakhi-thread"></div>
+            <div className="rakhi-center">
+              <div className="rakhi-pattern"></div>
+              <div className="rakhi-gem"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="content-text animate__animated animate__fadeInUp animate__delay-2s">
+          <p>You know what's amazing? Having someone who gets you completely - your quirks, your dreams, your midnight snack habits! 😄</p>
+          <p>That's exactly what makes our bond so precious. Through thick and thin, laughter and tears, you've always been there.</p>
+        </div>
+        
+        <div className="page-nav">
+          <button onClick={prevPage} className="nav-btn secondary">← Let's Go Back</button>
+          <button onClick={nextPage} className="nav-btn">Tell Me More! →</button>
+        </div>
+      </div>
+    </section>
+  );
+
+  // Memory Page Component
+  const MemoryPage = () => {
+    const memories = [
+      { 
+        title: "Those Crazy Adventures", 
+        desc: "Remember when we thought we could conquer the world before lunch? Those endless summer days when everything felt possible!", 
+        icon: "🏃‍♀️" 
+      },
+      { 
+        title: "Our Secret Vault", 
+        desc: "All those late-night giggles and whispered secrets under the blanket fort. Some things only we will ever know! 🤐", 
+        icon: "🤫" 
+      },
+      { 
+        title: "My Personal Superhero", 
+        desc: "Whether it was standing up to bullies or just being there when I felt lost, you've always been my shield and strength", 
+        icon: "🛡️" 
+      },
+      { 
+        title: "Cheerleader for Life", 
+        desc: "Every milestone, every dream, every small victory - you've celebrated them all like they were your own. That means everything!", 
+        icon: "🤝" 
+      }
+    ];
+
+    return (
+      <section className="page">
+        <div className="main-content animate__animated animate__slideInUp">
+          <h1 className="main-title animate__animated animate__bounceIn">Let's Rewind Time! 💭</h1>
+          <div className="content-text animate__animated animate__fadeIn animate__delay-1s">
+            <p>Sometimes the best moments are the ones that just happen - no planning, no fancy setup, just pure joy and connection...</p>
+          </div>
+          <div className="grid-container">
+            {memories.map((memory, index) => (
+              <div key={index} className={`card animate__animated animate__fadeInUp animate__delay-${index + 1}s`}>
+                <div className="card-icon">{memory.icon}</div>
+                <h3>{memory.title}</h3>
+                <p>{memory.desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="page-nav">
+            <button onClick={prevPage} className="nav-btn secondary">← Back to Greetings</button>
+            <button onClick={nextPage} className="nav-btn">What's Next? →</button>
+          </div>
+        </div>
+      </section>
+    );
+  };
+
+  // Wishes Page Component
+  const WishesPage = () => {
+    const wishes = [
+      { 
+        wish: "I hope your days are filled with those little moments that make you smile for no reason at all", 
+        from: "From the Heart", 
+        decorative: "🌟" 
+      },
+      { 
+        wish: "May every door you knock on open to something wonderful, and every path you choose lead to happiness", 
+        from: "With Love & Hope", 
+        decorative: "✨" 
+      },
+      { 
+        wish: "This little thread isn't just silk and colors - it's a promise that no matter where life takes us, we're connected forever", 
+        from: "Soul to Soul", 
+        decorative: "🎋" 
+      },
+      { 
+        wish: "Here's to more inside jokes, more spontaneous adventures, and more reasons to laugh until our stomachs hurt!", 
+        from: "Your Forever Partner-in-Crime", 
+        decorative: "💖" 
+      }
+    ];
+
+    return (
+      <section className="page">
+        <div className="main-content animate__animated animate__fadeIn">
+          <h1 className="main-title animate__animated animate__heartBeat">Wishes Straight from My Heart 💌</h1>
+          <div className="content-text animate__animated animate__fadeInDown animate__delay-1s">
+            <p>You know how some people just light up your world? That's exactly what you do, every single day...</p>
+          </div>
+          <div className="grid-container">
+            {wishes.map((wish, index) => (
+              <div key={index} className={`wish-scroll animate__animated animate__flipInY animate__delay-${index + 1}s`}>
+                <div className="scroll-decorative">{wish.decorative}</div>
+                <p className="content-text">"{wish.wish}"</p>
+                <div className="signature">- {wish.from}</div>
+              </div>
+            ))}
+          </div>
+          <div className="page-nav">
+            <button onClick={prevPage} className="nav-btn secondary">← Back to Memories</button>
+            <button onClick={nextPage} className="nav-btn">Let's Celebrate! →</button>
+          </div>
+        </div>
+      </section>
+    );
+  };
+
+  // Celebration Page Component
+  const CelebrationPage = () => {
+    const celebrations = [
+      "🎉 Dancing like nobody's watching (but laughing because we both are!)",
+      "🍬 Sharing sweets and stealing extra pieces when no one's looking", 
+      "🎁 Exchanging gifts that somehow always end up being exactly what we needed",
+      "📸 Taking a million photos until we get that perfect one",
+      "🕯️ Lighting diyas and making wishes we'll definitely remind each other about later",
+      "🎨 Creating the most Instagram-worthy rangoli (or at least trying to!)"
+    ];
+
+    return (
+      <section className="page">
+        <div className="main-content animate__animated animate__bounceIn">
+          <h1 className="main-title animate__animated animate__tada">Party Time! 🎊</h1>
+          <div className="content-text animate__animated animate__fadeInUp animate__delay-1s">
+            <p>Okay, real talk - today is ALL about us and this amazing connection we have!</p>
+            <p>Let's make some noise, create some chaos, and celebrate like the awesome duo we are:</p>
+          </div>
+          <div className="grid-container">
+            {celebrations.map((item, index) => (
+              <div key={index} className={`card animate__animated animate__zoomIn animate__delay-${index * 0.2 + 1}s`}>
+                {item}
+              </div>
+            ))}
+          </div>
+          <div className="celebration-finale animate__animated animate__pulse animate__infinite">
+            <div className="fireworks">🎆</div>
+            <p>Because honestly? Life is so much better when we're in it together!</p>
+            <div className="fireworks">🎇</div>
+          </div>
+          <div className="page-nav">
+            <button onClick={prevPage} className="nav-btn secondary">← Back to Wishes</button>
+            <button onClick={nextPage} className="nav-btn">The Grand Finale! →</button>
+          </div>
+        </div>
+      </section>
+    );
+  };
+
+  // Final Page Component
+  const FinalPage = () => (
+    <section className="page">
+      <div className="main-content animate__animated animate__fadeInUp">
+        <h1 className="main-title animate__animated animate__heartBeat animate__infinite">Before We Wrap This Up... 💝</h1>
+        
+        <div className="rakhi-container animate__animated animate__rotateIn animate__delay-1s">
+          <div className="big-rakhi-graphic">
+            <div className="big-rakhi-center">
+              <div className="rakhi-pattern"></div>
+              <div className="rakhi-gem"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="content-text animate__animated animate__fadeInLeft animate__delay-2s">
+          <p>You know what's beautiful? It doesn't matter if we're miles apart or right next to each other - this invisible thread between us never breaks. 💫</p>
+          <p>Thank you for being my constant, my safe space, my partner in all of life's adventures. Here's to many more years of being ridiculously awesome together!</p>
+          <p>Happy Raksha Bandhan, you amazing human! 🌟</p>
+        </div>
+        
+        <div className="signature animate__animated animate__bounceIn animate__delay-3s">
+          <p>Forever and always,</p>
+          <p>Your Lucky Sibling ✨</p>
+        </div>
+        
+        <div style={{ margin: '2rem 0', fontSize: '2.5rem' }} className="animate__animated animate__flash animate__infinite">
+          <span style={{ margin: '0 1rem', animation: 'sparkle-big 1.5s infinite' }}>✨</span>
+          <span style={{ margin: '0 1rem', animation: 'sparkle-big 1.5s infinite', animationDelay: '0.5s' }}>💖</span>
+          <span style={{ margin: '0 1rem', animation: 'sparkle-big 1.5s infinite', animationDelay: '1s' }}>✨</span>
+        </div>
+        
+        <div className="page-nav">
+          <button onClick={prevPage} className="nav-btn secondary">← Back to Party</button>
+          <button onClick={restartJourney} className="nav-btn special animate__animated animate__pulse animate__infinite">Let's Do This Again! 🔄</button>
+        </div>
+      </div>
+    </section>
+  );
+
+  // Audio Control Component
+  const AudioControl = () => {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const audioRef = useRef(null);
+
+    const toggleAudio = () => {
+      setIsPlaying(!isPlaying);
+    };
+
+    return (
+      <div className="audio-control">
+        <audio ref={audioRef} loop>
+          {/* Add your music file here */}
+        </audio>
+        <button onClick={toggleAudio} className="audio-btn animate__animated animate__pulse">
+          {isPlaying ? '🔊' : '🔇'}
+        </button>
+      </div>
+    );
+  };
+
+  const renderCurrentPage = () => {
+    switch (pages[currentPage]) {
+      case 'welcome': return <WelcomePage />;
+      case 'greeting': return <GreetingPage />;
+      case 'memory': return <MemoryPage />;
+      case 'wishes': return <WishesPage />;
+      case 'celebration': return <CelebrationPage />;
+      case 'final': return <FinalPage />;
+      default: return <WelcomePage />;
+    }
+  };
+
+  return (
+    <div className="app-container">
+      <div ref={flowerContainerRef} className="flower-container"></div>
+      <AudioControl />
+      
+      <div className="page-indicator">
+        {pages.map((_, index) => (
+          <div 
+            key={index}
+            className={`indicator-dot ${index === currentPage ? 'active' : ''} animate__animated ${index === currentPage ? 'animate__pulse' : ''}`}
+            onClick={() => goToPage(index)}
+            title={`Go to ${pages[index]} page`}
+          />
+        ))}
+      </div>
+      
+      <main>{renderCurrentPage()}</main>
+      
+      <footer className="footer animate__animated animate__slideInUp">
+        <p>Made with 💖 and lots of giggles for Raksha Bandhan 2025</p>
+      </footer>
+    </div>
+  );
+};
+
+export default App;
